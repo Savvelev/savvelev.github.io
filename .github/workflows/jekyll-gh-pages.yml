@@ -1,9 +1,9 @@
-name: Build & Deploy Jekyll to GitHub Pages
+name: Build & Deploy Jekyll → GitHub Pages
 
 on:
   push:
-    branches: ["main"]      # деплой ТОЛЬКО из main
-  workflow_dispatch:        # запуск вручную, если нужно
+    branches: ["main"]        # деплой только из main
+  workflow_dispatch:          # запуск вручную
 
 permissions:
   contents: read
@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/configure-pages@v5    # v5 актуальна
+      - uses: actions/configure-pages@v5     # последняя на 2025-05
 
       - name: Build site with Jekyll
         uses: actions/jekyll-build-pages@v1
@@ -24,15 +24,14 @@ jobs:
           source: .
           destination: ./_site
 
-      - name: Ensure _site is not empty   # ⬅ отладочный вывод, оставь
+      - name: Проверяем, что _site не пуст
         run: ls -R ./_site | head
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact для Pages
+        uses: actions/upload-pages-artifact@v3   # ← ключевой шаг!
         with:
-          name: github-pages          # 👈 ОБЯЗАТЕЛЬНО!
-          path: ./_site               # 👈 куда Jekyll вывел сайт
-          if-no-files-found: error
+          path: ./_site                          # что паковать
+          # name остаётся github-pages по умолчанию
 
   deploy:
     needs: build
@@ -43,6 +42,5 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v4     # v4 ищет артефакт
-        with:
-          artifact_name: github-pages     # 👈 то же имя
+        uses: actions/deploy-pages@v4
+        # artifact_name указывать не нужно: по умолчанию github-pages
