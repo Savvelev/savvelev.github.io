@@ -2,15 +2,15 @@ name: CI/CD Jekyll → GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main"]          # деплой будет только на пуш в main
   pull_request:
-    branches: ["main"]
+    branches: ["main"]          # PR только для сборки и проверки
   workflow_dispatch:
 
 permissions:
-  contents: read         # для checkout
-  pages: write           # для deploy-pages
-  id-token: write        # для configure-pages
+  contents: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: pages
@@ -19,34 +19,34 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4               # 🔄 заменили v3→v4
-
-      - name: Enable Pages environment
-        uses: actions/configure-pages@v5        # 🔄 v5 актуальна
-
-      - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1     # без изменений
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/jekyll-build-pages@v1
         with:
           source: ./
           destination: ./_site
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3  # 🔄 v3 — использует v4 артефакты под капотом
+      - name: Check output
+        run: ls -la ./_site
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: ./_site                         # путь к собранному сайту
-          # name: github-pages                 # не обязательно — по умолчанию github-pages
+          name: github-pages
+          path: ./_site
 
   deploy:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
+      # оставляем, чтобы GitHub Pages знал, куда деплоить
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4           # 🔄 обновили v2→v4
+        uses: actions/deploy-pages@v2
+        with:
+          artifact_name: github-pages
