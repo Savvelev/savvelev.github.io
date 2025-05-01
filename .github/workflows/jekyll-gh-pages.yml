@@ -8,53 +8,45 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: read         # для checkout
+  pages: write           # для deploy-pages
+  id-token: write        # для configure-pages
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  # --- СБОРКА ---
   build:
     runs-on: ubuntu-latest
-    outputs:
-      artifact-name: github-pages
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4               # 🔄 заменили v3→v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - name: Enable Pages environment
+        uses: actions/configure-pages@v5        # 🔄 v5 актуальна
 
       - name: Build with Jekyll
-        uses: actions/jekyll-build-pages@v1
+        uses: actions/jekyll-build-pages@v1     # без изменений
         with:
           source: ./
           destination: ./_site
 
-      - name: Verify ./_site contents
-        run: |
-          ls -la ./_site
-
-      - name: Upload artifact manually
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3  # 🔄 v3 — использует v4 артефакты под капотом
         with:
-          name: github-pages       # ← ИМЯ артефакта должно совпадать с deploy
-          path: ./_site
+          path: ./_site                         # путь к собранному сайту
+          # name: github-pages                 # не обязательно — по умолчанию github-pages
 
-  # --- ДЕПЛОЙ ---
   deploy:
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v2
-        with:
-          artifact_name: ${{ needs.build.outputs.artifact-name }}
+        uses: actions/deploy-pages@v4           # 🔄 обновили v2→v4
