@@ -1,52 +1,48 @@
-name: CI/CD Jekyll → GitHub Pages
+name: Build & Deploy Jekyll to GitHub Pages
 
 on:
   push:
-    branches: ["main"]          # деплой будет только на пуш в main
-  pull_request:
-    branches: ["main"]          # PR только для сборки и проверки
-  workflow_dispatch:
+    branches: ["main"]      # деплой ТОЛЬКО из main
+  workflow_dispatch:        # запуск вручную, если нужно
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-      - uses: actions/jekyll-build-pages@v1
+
+      - uses: actions/configure-pages@v5    # v5 актуальна
+
+      - name: Build site with Jekyll
+        uses: actions/jekyll-build-pages@v1
         with:
-          source: ./
+          source: .
           destination: ./_site
 
-      - name: Check output
-        run: ls -la ./_site
+      - name: Ensure _site is not empty   # ⬅ отладочный вывод, оставь
+        run: ls -R ./_site | head
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: github-pages
-          path: ./_site
+          name: github-pages          # 👈 ОБЯЗАТЕЛЬНО!
+          path: ./_site               # 👈 куда Jekyll вывел сайт
+          if-no-files-found: error
 
   deploy:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      # оставляем, чтобы GitHub Pages знал, куда деплоить
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+        id: deploy
+        uses: actions/deploy-pages@v4     # v4 ищет артефакт
         with:
-          artifact_name: github-pages
+          artifact_name: github-pages     # 👈 то же имя
